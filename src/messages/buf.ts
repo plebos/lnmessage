@@ -63,40 +63,26 @@ export class BufferReader {
     return this._lastReadBytes
   }
 
-  /**
-   * Read a UInt8 number
-   */
-  public readUInt8(): number {
-    return this._readStandard(this.readUInt8.name, 1)
-  }
 
-  /**
-   * Read a UInt16 number as little-endian
-   */
-  public readUInt16LE(): number {
-    return this._readStandard(this.readUInt16LE.name, 2)
-  }
+public readUInt8(): number {
+  return this._readStandard(Buffer.prototype.readUInt8, 1);
+}
 
-  /**
-   * Read a UInt16 number as big-endian
-   */
-  public readUInt16BE(): number {
-    return this._readStandard(this.readUInt16BE.name, 2)
-  }
+public readUInt16LE(): number {
+  return this._readStandard(Buffer.prototype.readUInt16LE, 2);
+}
 
-  /**
-   * Read a UInt32 number as little-endian
-   */
-  public readUInt32LE(): number {
-    return this._readStandard(this.readUInt32LE.name, 4)
-  }
+public readUInt16BE(): number {
+  return this._readStandard(Buffer.prototype.readUInt16BE, 2);
+}
 
-  /**
-   * Read a UInt32 number as big-endian
-   */
-  public readUInt32BE(): number {
-    return this._readStandard(this.readUInt32BE.name, 4)
-  }
+public readUInt32LE(): number {
+  return this._readStandard(Buffer.prototype.readUInt32LE, 2);
+}
+
+public readUInt32BE(): number {
+  return this._readStandard(Buffer.prototype.readUInt32BE, 2);
+}
 
   /**
    * Read a UInt64 number as big-endian
@@ -285,23 +271,27 @@ export class BufferReader {
     return val
   }
 
-  /**
-   * Helper for reading off buffer using built-in read functions
-   * @param fn name of function
-   * @param len length to read
-   */
-  private _readStandard(fn: string, len: number): number {
-    if (this._position + len > this._buffer.length) {
-      throw new RangeError('Index out of range')
-    }
-
-    // @ts-ignore
-    const result: number = this._buffer[fn](this._position)
-    this._position += len
-    this._lastReadBytes = len
-    return result
+private _readStandard_old(fn: (offset: number) => number, len: number): number {
+  if (this._position + len > this._buffer.length) {
+    throw new RangeError('Index out of range');
   }
 
+  const result: number = fn.call(this._buffer, this._position);
+  this._position += len;
+  this._lastReadBytes = len;
+  return result;
+}
+
+private _readStandard(fn: (offset: number) => number, len: number): number {
+  if (this._position + len > this._buffer.length) {
+    throw new RangeError('Index out of range');
+  }
+
+  const result: number = fn.call(this._buffer, this._position);
+  this._position += len;
+  this._lastReadBytes = len;
+  return result;
+}
   /**
    * Ensures the TUInt value is minimally encoded
    * @param num
@@ -361,45 +351,26 @@ export class BufferWriter {
     else return this._buffer.subarray(0, this._position)
   }
 
-  /**
-   * Write at the current positiion
-   * @param val
-   */
-  public writeUInt8(val: number) {
-    this._writeStandard(this.writeUInt8.name, val, 1)
-  }
 
-  /**
-   * Write at the current positiion
-   * @param val
-   */
-  public writeUInt16LE(val: number) {
-    this._writeStandard(this.writeUInt16LE.name, val, 2)
-  }
+  public writeUInt8(value: number) {
+  this._writeStandard(Buffer.prototype.writeUInt8, value, 1);
+}
 
-  /**
-   * Write at the current positiion
-   * @param val
-   */
-  public writeUInt16BE(val: number) {
-    this._writeStandard(this.writeUInt16BE.name, val, 2)
-  }
+public writeUInt16LE(value: number) {
+  this._writeStandard(Buffer.prototype.writeUInt16LE, value, 2);
+}
 
-  /**
-   * Write at the current positiion
-   * @param val
-   */
-  public writeUInt32LE(val: number) {
-    this._writeStandard(this.writeUInt32LE.name, val, 4)
-  }
+public writeUInt16BE(value: number) {
+  this._writeStandard(Buffer.prototype.writeUInt16BE, value, 2);
+}
 
-  /**
-   * Write at the current positiion
-   * @param val
-   */
-  public writeUInt32BE(val: number) {
-    this._writeStandard(this.writeUInt32BE.name, val, 4)
-  }
+public writeUInt32LE(value: number) {
+  this._writeStandard(Buffer.prototype.writeUInt32LE, value, 2);
+}
+
+public writeUInt32BE(value: number) {
+  this._writeStandard(Buffer.prototype.writeUInt32BE, value, 2);
+}
 
   /**
    * Write at the current positiion
@@ -566,10 +537,18 @@ export class BufferWriter {
    * @param val number to write
    * @param len length of number in bytes
    */
-  private _writeStandard(fn: string, val: number, len: number) {
+  private _writeStandard_old(fn: string, val: number, len: number) {
+    console.log('_writeStandard is calling: ', fn);
     this._expand(len)
     // @ts-ignore
     this._buffer[fn](val, this._position)
     this._position += len
   }
+
+  private _writeStandard(fn: (value: number, offset: number) => void, val: number, len: number) {
+    this._expand(len);
+    fn.call(this._buffer, val, this._position);
+    this._position += len;
+  }
+  
 }
